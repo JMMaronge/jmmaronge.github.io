@@ -1,0 +1,116 @@
+---
+title: Introduction/doing prcomp() more efficiently
+author: Jacob M. Maronge
+date: '2016-07-13'
+slug: introduction-doing-prcomp-more-efficiently
+categories: []
+tags:
+  - pca
+  - introduction
+  - computing
+  - r
+---
+
+###Introduction/doing prcomp() more efficiently
+
+Hi everyone! In my head, this blog will serve a couple purposes. The first, will be so that as I develop R code/packages, I can introduce them here and do short tutorials on how they work. This will be both for my own benefit, and the benefit of others (ideally) who are interested in what I'm working on. Second, it will be a collection of short statistics/R topics that I go through that, for whatever reason, I have a hard time getting straight in my head. In addition, I think this is a good way of practicing writing in a clear manner, even though it will be much less formal than writing for a paper/thesis/whatever.
+
+So, right now I'm working on a project which basically boils down to doing a principal component analysis on a *very* big matrix. I'll introduce the project and the R package I'm working on for it in a future post. By big matrix I mean long, so if you have a matrix $X$ with $n$ rows and $p$ columns, $n>>p$. Before going on, I have to shout-out [Elizabeth Sweeney](https://elizabethmargaretsweeney.wordpress.com) for writing a really cool [swirl](http://swirlstats.com) lesson on PCA. It really helped me understand the idea. I should also point out the [page of this course](http://genomicsclass.github.io/book/pages/pca_svd.html), which really helped me, too.
+
+**So what is a principal component analysis (PCA)?**
+
+PCA is generally used as a data reduction technique. In my particular case, I have a matrix with ~400 columns (variables) and ~10 million observations. The goal of a PCA is to take those original 400 variables and create new "variables", called principal components (PCs). These PCs have a few key properties. The PCs are linear combinations of the original variables, they are uncorrelated, and each PC explains the maximum amount of variation in the original $X$ matrix. Traditionally, you might then take only the first few PCs that explain some large percentage of the variation in the original matrix, thereby reducing the number of variables to analyze.  I'm not going to go over every detail of how to do this, but [The Wikipedia Page](https://en.wikipedia.org/wiki/Principal_component_analysis) on it is pretty good.
+
+Now, luckily you don't need to do this by hand. Every statistical package that I know of has a function to do PCA. Because I work mostly in R, I will highlight that here.
+
+One of the R functions to do PCA is called prcomp(). The main arguments one would pass to prcomp() might be:   
+
+- **x**:The matrix-like object to do a PCA on      
+- **center**:A TRUE/FALSE argument which tells R if it should center the data (subtract the mean of each column from the corresponding column)   
+- **scale.**:A TRUE/FALSE argument which tells R if it should scale the data (divide the standard deviation of each column from the corresponding column)   
+
+**Why prcomp() is great**
+
+The prcomp() function is great in a lot of ways. It returns the "loadings" of each original variable onto each PC. These loadings are basically the coefficients to the linear combinations of the original variables for each PC. This function also returns the "rotated" $X$ matrix, which is the inner product between each observation and the loading for each PC. It also returns information about the variance explained by each PC.
+
+**Why prcomp() is bad (sometimes)**
+
+The prcomp() function doesn't work great in situations where the matrix is very long (number of rows>>number of columns). Let me explain why...
+
+prcomp() essentially works by doing a singular value decomposition (SVD) on the matrix given to it in the x argument. The R function for SVD is svd(). A SVD, as related to PCA, works by decomposing the matrix $X$ like so,
+
+$$X= UDV^T,$$
+
+where U is the matrix of scores on each principal component (rotated $X$), $D$ is a diagonal matrix containing values proportional to the variation explained by each PC (eigenvalues of $X^TX$), and $V$ is a matrix with the loadings of each each variable on each PC on the columns (eigenvectors of $X^TX$). This is great, but when $X$ is a long matrix it can be better to do a SVD on $X^TX$. This is because the number of rows of $X^TX$ is much smaller than $X$. This is done like this,
+
+$$X^TX = VD^TU^TUDV^T,$$
+$$X^TX = VD^TIDV^T,$$
+$$X^TX = VD^2V^T.$$
+
+Now you're in business! It may seem like the $U$ matrix is gone by doing this, but $U=XV$. I'll now show how you can get the same information from prcomp($X$) by doing svd($X^TX$).
+
+**R code**
+
+First, let's generate a matrix of data.
+
+```{r, echo=TRUE}
+set.seed(463437)
+X<- matrix(rnorm(10000000, mean = 5, sd=2),nrow=2000000)
+X <- scale(X) ###center/scale just for fun
+head(X)
+```
+
+Now, let's use prcomp() to get some information we might normally be interested in for a PCA.
+
+```{r, echo=TRUE}
+pca.out<-prcomp(X, center = FALSE,scale. = FALSE)
+summary(pca.out)###This will give us information about the variance explained by each PC
+pca.out$rotation ###This will give us the loadings matrix
+head(pca.out$x) #The first few rows of the rotated X matrix
+```
+
+Now, let's use svd() to do a PCA on the $X^TX$ matrix!
+
+```{r, echo=TRUE}
+svd.out<-svd(crossprod(X))
+svd.out$v###Loading matrix for X compare with pca.out$rotation above
+```
+
+Keep in mind it is possible to get a result that is off by a multiple of negative 1. This is because the choice of 1 or -1 is arbitrary. You shouldn't be alarmed if this happens. Now, let's take a look at the standard deviations.
+
+```{r, echo=TRUE}
+sds<-sqrt(svd.out$d/(nrow(X)-1))
+sds
+```
+
+As can be seen, the standard deviation explained by each principal component is equal to the of the entries in the diagonal of the $D$ matrix from the SVD divided by the number of observations minus 1 square-rooted. To get the variances you can just square these values, if you wanted to get the proportion of variance explained by each PC you can do something like...
+
+```{r,echo=TRUE}
+cumsum(sds^2)/sum(sds^2)
+```
+
+Finally, let's get the rotated $X$ matrix...
+
+```{r,echo=TRUE}
+u<- X%*%svd.out$v
+head(u)
+```
+
+Which is exactly equivalent to the rotated $X$ matrix from prcomp()! Now that I've shown that you can get all of the same information. Let's test speed...
+
+```{r,echo=TRUE}
+system.time({
+  prcomp(X)
+})
+
+system.time({
+  svd(crossprod(X))
+})
+```
+
+Wow! Doing the SVD as I've shown is much faster!
+
+**Conclusions**
+
+This post isn't meant to give you a thorough understanding of PCA, but I think it's a good place to see some of how it works. It also shows an alternative to the built in functions in R and the speed increase from it. This alternative is only useful when you have a really long matrix, but this is something that might occur fairly often. Thanks!
+
