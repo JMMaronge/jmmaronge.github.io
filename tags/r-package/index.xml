@@ -8,7 +8,9 @@
     <language>en-us</language>
     <copyright>&amp;copy; 2017 Jacob M. Maronge</copyright>
     <lastBuildDate>Wed, 17 Aug 2016 00:00:00 +0000</lastBuildDate>
-    <atom:link href="/tags/r-package/" rel="self" type="application/rss+xml" />
+    
+	<atom:link href="/tags/r-package/index.xml" rel="self" type="application/rss+xml" />
+    
     
     <item>
       <title>Introducing medals</title>
@@ -16,16 +18,8 @@
       <pubDate>Wed, 17 Aug 2016 00:00:00 +0000</pubDate>
       
       <guid>/post/introducing-medals/</guid>
-      <description>&lt;div id=&#34;introducing-medals&#34; class=&#34;section level3&#34;&gt;
-&lt;h3&gt;Introducing medals&lt;/h3&gt;
-&lt;p&gt;Please take a look at the medals vignette!&lt;/p&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;install.packages(&amp;quot;devtools&amp;quot;)
-library(devtools)
-install_github(&amp;quot;jmmaronge/medals&amp;quot;)
-library(medals)
-vignette(topic=&amp;quot;medals_vignette&amp;quot;,package=&amp;quot;medals&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-</description>
+      <description>Introducing medals Please take a look at the medals vignette!
+install.packages(&amp;quot;devtools&amp;quot;) library(devtools) install_github(&amp;quot;jmmaronge/medals&amp;quot;) library(medals) vignette(topic=&amp;quot;medals_vignette&amp;quot;,package=&amp;quot;medals&amp;quot;)  </description>
     </item>
     
   </channel>
