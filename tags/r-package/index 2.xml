@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>R Package on Jacob M. Maronge</title>
+    <link>/tags/r-package/</link>
+    <description>Recent content in R Package on Jacob M. Maronge</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <copyright>&amp;copy; 2017 Jacob M. Maronge</copyright>
+    <lastBuildDate>Wed, 17 Aug 2016 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="/tags/r-package/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Introducing medals</title>
+      <link>/post/introducing-medals/</link>
+      <pubDate>Wed, 17 Aug 2016 00:00:00 +0000</pubDate>
+      
+      <guid>/post/introducing-medals/</guid>
+      <description>Introducing medals Please take a look at the medals vignette!
+install.packages(&amp;quot;devtools&amp;quot;) library(devtools) install_github(&amp;quot;jmmaronge/medals&amp;quot;) library(medals) vignette(topic=&amp;quot;medals_vignette&amp;quot;,package=&amp;quot;medals&amp;quot;)  </description>
+    </item>
+    
+  </channel>
+</rss>

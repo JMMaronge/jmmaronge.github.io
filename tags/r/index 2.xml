@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>R on Jacob M. Maronge</title>
+    <link>/tags/r/</link>
+    <description>Recent content in R on Jacob M. Maronge</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <copyright>&amp;copy; 2017 Jacob M. Maronge</copyright>
+    <lastBuildDate>Wed, 13 Jul 2016 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="/tags/r/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Introduction/doing prcomp() more efficiently</title>
+      <link>/post/introduction-doing-prcomp-more-efficiently/</link>
+      <pubDate>Wed, 13 Jul 2016 00:00:00 +0000</pubDate>
+      
+      <guid>/post/introduction-doing-prcomp-more-efficiently/</guid>
+      <description>Introduction/doing prcomp() more efficiently Hi everyone! In my head, this blog will serve a couple purposes. The first, will be so that as I develop R code/packages, I can introduce them here and do short tutorials on how they work. This will be both for my own benefit, and the benefit of others (ideally) who are interested in what I’m working on. Second, it will be a collection of short statistics/R topics that I go through that, for whatever reason, I have a hard time getting straight in my head.</description>
+    </item>
+    
+  </channel>
+</rss>

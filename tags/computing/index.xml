@@ -8,9 +8,7 @@
     <language>en-us</language>
     <copyright>&amp;copy; 2017 Jacob M. Maronge</copyright>
     <lastBuildDate>Wed, 13 Jul 2016 00:00:00 +0000</lastBuildDate>
-    
-	<atom:link href="/tags/computing/index.xml" rel="self" type="application/rss+xml" />
-    
+    <atom:link href="/tags/computing/" rel="self" type="application/rss+xml" />
     
     <item>
       <title>Introduction/doing prcomp() more efficiently</title>
@@ -18,7 +16,108 @@
       <pubDate>Wed, 13 Jul 2016 00:00:00 +0000</pubDate>
       
       <guid>/post/introduction-doing-prcomp-more-efficiently/</guid>
-      <description>Introduction/doing prcomp() more efficiently Hi everyone! In my head, this blog will serve a couple purposes. The first, will be so that as I develop R code/packages, I can introduce them here and do short tutorials on how they work. This will be both for my own benefit, and the benefit of others (ideally) who are interested in what I’m working on. Second, it will be a collection of short statistics/R topics that I go through that, for whatever reason, I have a hard time getting straight in my head.</description>
+      <description>&lt;div id=&#34;introductiondoing-prcomp-more-efficiently&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Introduction/doing prcomp() more efficiently&lt;/h3&gt;
+&lt;p&gt;Hi everyone! In my head, this blog will serve a couple purposes. The first, will be so that as I develop R code/packages, I can introduce them here and do short tutorials on how they work. This will be both for my own benefit, and the benefit of others (ideally) who are interested in what I’m working on. Second, it will be a collection of short statistics/R topics that I go through that, for whatever reason, I have a hard time getting straight in my head. In addition, I think this is a good way of practicing writing in a clear manner, even though it will be much less formal than writing for a paper/thesis/whatever.&lt;/p&gt;
+&lt;p&gt;So, right now I’m working on a project which basically boils down to doing a principal component analysis on a &lt;em&gt;very&lt;/em&gt; big matrix. I’ll introduce the project and the R package I’m working on for it in a future post. By big matrix I mean long, so if you have a matrix &lt;span class=&#34;math inline&#34;&gt;\(X\)&lt;/span&gt; with &lt;span class=&#34;math inline&#34;&gt;\(n\)&lt;/span&gt; rows and &lt;span class=&#34;math inline&#34;&gt;\(p\)&lt;/span&gt; columns, &lt;span class=&#34;math inline&#34;&gt;\(n&amp;gt;&amp;gt;p\)&lt;/span&gt;. Before going on, I have to shout-out &lt;a href=&#34;https://elizabethmargaretsweeney.wordpress.com&#34;&gt;Elizabeth Sweeney&lt;/a&gt; for writing a really cool &lt;a href=&#34;http://swirlstats.com&#34;&gt;swirl&lt;/a&gt; lesson on PCA. It really helped me understand the idea. I should also point out the &lt;a href=&#34;http://genomicsclass.github.io/book/pages/pca_svd.html&#34;&gt;page of this course&lt;/a&gt;, which really helped me, too.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;So what is a principal component analysis (PCA)?&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;PCA is generally used as a data reduction technique. In my particular case, I have a matrix with ~400 columns (variables) and ~10 million observations. The goal of a PCA is to take those original 400 variables and create new “variables”, called principal components (PCs). These PCs have a few key properties. The PCs are linear combinations of the original variables, they are uncorrelated, and each PC explains the maximum amount of variation in the original &lt;span class=&#34;math inline&#34;&gt;\(X\)&lt;/span&gt; matrix. Traditionally, you might then take only the first few PCs that explain some large percentage of the variation in the original matrix, thereby reducing the number of variables to analyze. I’m not going to go over every detail of how to do this, but &lt;a href=&#34;https://en.wikipedia.org/wiki/Principal_component_analysis&#34;&gt;The Wikipedia Page&lt;/a&gt; on it is pretty good.&lt;/p&gt;
+&lt;p&gt;Now, luckily you don’t need to do this by hand. Every statistical package that I know of has a function to do PCA. Because I work mostly in R, I will highlight that here.&lt;/p&gt;
+&lt;p&gt;One of the R functions to do PCA is called prcomp(). The main arguments one would pass to prcomp() might be:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;x&lt;/strong&gt;:The matrix-like object to do a PCA on&lt;br /&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;center&lt;/strong&gt;:A TRUE/FALSE argument which tells R if it should center the data (subtract the mean of each column from the corresponding column)&lt;br /&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;scale.&lt;/strong&gt;:A TRUE/FALSE argument which tells R if it should scale the data (divide the standard deviation of each column from the corresponding column)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Why prcomp() is great&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;The prcomp() function is great in a lot of ways. It returns the “loadings” of each original variable onto each PC. These loadings are basically the coefficients to the linear combinations of the original variables for each PC. This function also returns the “rotated” &lt;span class=&#34;math inline&#34;&gt;\(X\)&lt;/span&gt; matrix, which is the inner product between each observation and the loading for each PC. It also returns information about the variance explained by each PC.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Why prcomp() is bad (sometimes)&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;The prcomp() function doesn’t work great in situations where the matrix is very long (number of rows&amp;gt;&amp;gt;number of columns). Let me explain why…&lt;/p&gt;
+&lt;p&gt;prcomp() essentially works by doing a singular value decomposition (SVD) on the matrix given to it in the x argument. The R function for SVD is svd(). A SVD, as related to PCA, works by decomposing the matrix &lt;span class=&#34;math inline&#34;&gt;\(X\)&lt;/span&gt; like so,&lt;/p&gt;
+&lt;p&gt;&lt;span class=&#34;math display&#34;&gt;\[X= UDV^T,\]&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;where U is the matrix of scores on each principal component (rotated &lt;span class=&#34;math inline&#34;&gt;\(X\)&lt;/span&gt;), &lt;span class=&#34;math inline&#34;&gt;\(D\)&lt;/span&gt; is a diagonal matrix containing values proportional to the variation explained by each PC (eigenvalues of &lt;span class=&#34;math inline&#34;&gt;\(X^TX\)&lt;/span&gt;), and &lt;span class=&#34;math inline&#34;&gt;\(V\)&lt;/span&gt; is a matrix with the loadings of each each variable on each PC on the columns (eigenvectors of &lt;span class=&#34;math inline&#34;&gt;\(X^TX\)&lt;/span&gt;). This is great, but when &lt;span class=&#34;math inline&#34;&gt;\(X\)&lt;/span&gt; is a long matrix it can be better to do a SVD on &lt;span class=&#34;math inline&#34;&gt;\(X^TX\)&lt;/span&gt;. This is because the number of rows of &lt;span class=&#34;math inline&#34;&gt;\(X^TX\)&lt;/span&gt; is much smaller than &lt;span class=&#34;math inline&#34;&gt;\(X\)&lt;/span&gt;. This is done like this,&lt;/p&gt;
+&lt;p&gt;&lt;span class=&#34;math display&#34;&gt;\[X^TX = VD^TU^TUDV^T,\]&lt;/span&gt; &lt;span class=&#34;math display&#34;&gt;\[X^TX = VD^TIDV^T,\]&lt;/span&gt; &lt;span class=&#34;math display&#34;&gt;\[X^TX = VD^2V^T.\]&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;Now you’re in business! It may seem like the &lt;span class=&#34;math inline&#34;&gt;\(U\)&lt;/span&gt; matrix is gone by doing this, but &lt;span class=&#34;math inline&#34;&gt;\(U=XV\)&lt;/span&gt;. I’ll now show how you can get the same information from prcomp(&lt;span class=&#34;math inline&#34;&gt;\(X\)&lt;/span&gt;) by doing svd(&lt;span class=&#34;math inline&#34;&gt;\(X^TX\)&lt;/span&gt;).&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;R code&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;First, let’s generate a matrix of data.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;set.seed(463437)
+X&amp;lt;- matrix(rnorm(10000000, mean = 5, sd=2),nrow=2000000)
+X &amp;lt;- scale(X) ###center/scale just for fun
+head(X)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;##            [,1]        [,2]       [,3]       [,4]       [,5]
+## [1,]  0.3342926 -0.09597261  0.5691286  0.6710715 -1.3462614
+## [2,]  0.2353890  1.01246339 -0.3531590 -0.7519063 -0.1333749
+## [3,] -0.3997027  1.39202488 -0.6967370 -1.2145285  0.2709669
+## [4,]  0.1747592  0.77323215 -0.2655447  0.8458704 -0.7212173
+## [5,]  0.5473137 -1.25200774  0.8109609 -1.6694422 -1.6119333
+## [6,]  0.9068586 -1.23603056 -2.3260321 -0.6060280 -1.3784609&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Now, let’s use prcomp() to get some information we might normally be interested in for a PCA.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;pca.out&amp;lt;-prcomp(X, center = FALSE,scale. = FALSE)
+summary(pca.out)###This will give us information about the variance explained by each PC&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Importance of components:
+##                           PC1    PC2    PC3    PC4    PC5
+## Standard deviation     1.0009 1.0001 0.9999 0.9996 0.9994
+## Proportion of Variance 0.2004 0.2000 0.2000 0.1998 0.1998
+## Cumulative Proportion  0.2004 0.4004 0.6004 0.8002 1.0000&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;pca.out$rotation ###This will give us the loadings matrix&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;##             PC1        PC2        PC3         PC4        PC5
+## [1,] -0.5899718  0.2019000 -0.2196137  0.05438603  0.7483192
+## [2,] -0.1345674 -0.7917690  0.4612014 -0.27082518  0.2625651
+## [3,] -0.4210631  0.4483180  0.4661520 -0.57368128 -0.2744246
+## [4,]  0.5391197  0.1134157 -0.2679098 -0.70017228  0.3667015
+## [5,]  0.4072845  0.3442180  0.6708127  0.32302390  0.4016207&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;head(pca.out$x) #The first few rows of the rotated X matrix&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;##              PC1         PC2        PC3        PC4        PC5
+## [1,] -0.61047103  0.01133509 -0.9352533 -1.1870660 -0.2258279
+## [2,] -0.58610416 -1.04362764  0.3626026  0.4245827  0.2096079
+## [3,] -0.20255310 -1.53969680  0.9121508  0.9388793 -0.0789497
+## [4,]  0.06694102 -0.84830683 -0.5159667 -0.8727937  0.4271976
+## [5,] -2.05243059  0.72117468 -0.9536396  0.5518125 -1.4012885
+## [6,] -0.27743266 -0.42428070 -2.6158304  1.6975179  0.2165518&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Now, let’s use svd() to do a PCA on the &lt;span class=&#34;math inline&#34;&gt;\(X^TX\)&lt;/span&gt; matrix!&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;svd.out&amp;lt;-svd(crossprod(X))
+svd.out$v###Loading matrix for X compare with pca.out$rotation above&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;##            [,1]       [,2]       [,3]        [,4]       [,5]
+## [1,] -0.5899718  0.2019000 -0.2196137  0.05438603  0.7483192
+## [2,] -0.1345674 -0.7917690  0.4612014 -0.27082518  0.2625651
+## [3,] -0.4210631  0.4483180  0.4661520 -0.57368128 -0.2744246
+## [4,]  0.5391197  0.1134157 -0.2679098 -0.70017229  0.3667015
+## [5,]  0.4072845  0.3442180  0.6708127  0.32302390  0.4016207&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Keep in mind it is possible to get a result that is off by a multiple of negative 1. This is because the choice of 1 or -1 is arbitrary. You shouldn’t be alarmed if this happens. Now, let’s take a look at the standard deviations.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;sds&amp;lt;-sqrt(svd.out$d/(nrow(X)-1))
+sds&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## [1] 1.0009009 1.0001037 0.9999275 0.9996270 0.9994403&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;As can be seen, the standard deviation explained by each principal component is equal to the of the entries in the diagonal of the &lt;span class=&#34;math inline&#34;&gt;\(D\)&lt;/span&gt; matrix from the SVD divided by the number of observations minus 1 square-rooted. To get the variances you can just square these values, if you wanted to get the proportion of variance explained by each PC you can do something like…&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;cumsum(sds^2)/sum(sds^2)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## [1] 0.2003605 0.4004020 0.6003730 0.8002238 1.0000000&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Finally, let’s get the rotated &lt;span class=&#34;math inline&#34;&gt;\(X\)&lt;/span&gt; matrix…&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;u&amp;lt;- X%*%svd.out$v
+head(u)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;##             [,1]        [,2]       [,3]       [,4]       [,5]
+## [1,] -0.61047103  0.01133509 -0.9352533 -1.1870660 -0.2258279
+## [2,] -0.58610416 -1.04362764  0.3626026  0.4245827  0.2096079
+## [3,] -0.20255310 -1.53969680  0.9121508  0.9388793 -0.0789497
+## [4,]  0.06694102 -0.84830683 -0.5159667 -0.8727937  0.4271976
+## [5,] -2.05243059  0.72117468 -0.9536396  0.5518125 -1.4012885
+## [6,] -0.27743266 -0.42428070 -2.6158304  1.6975179  0.2165518&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Which is exactly equivalent to the rotated &lt;span class=&#34;math inline&#34;&gt;\(X\)&lt;/span&gt; matrix from prcomp()! Now that I’ve shown that you can get all of the same information. Let’s test speed…&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;system.time({
+  prcomp(X)
+})&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;##    user  system elapsed 
+##   0.465   0.050   0.516&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;system.time({
+  svd(crossprod(X))
+})&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;##    user  system elapsed 
+##   0.049   0.000   0.049&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Wow! Doing the SVD as I’ve shown is much faster!&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Conclusions&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;This post isn’t meant to give you a thorough understanding of PCA, but I think it’s a good place to see some of how it works. It also shows an alternative to the built in functions in R and the speed increase from it. This alternative is only useful when you have a really long matrix, but this is something that might occur fairly often. Thanks!&lt;/p&gt;
+&lt;/div&gt;
+</description>
     </item>
     
   </channel>

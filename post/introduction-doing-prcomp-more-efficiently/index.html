@@ -317,12 +317,12 @@ head(u)</code></pre>
   prcomp(X)
 })</code></pre>
 <pre><code>##    user  system elapsed 
-##   0.534   0.087   0.628</code></pre>
+##   0.465   0.050   0.516</code></pre>
 <pre class="r"><code>system.time({
   svd(crossprod(X))
 })</code></pre>
 <pre><code>##    user  system elapsed 
-##   0.044   0.000   0.044</code></pre>
+##   0.049   0.000   0.049</code></pre>
 <p>Wow! Doing the SVD as I’ve shown is much faster!</p>
 <p><strong>Conclusions</strong></p>
 <p>This post isn’t meant to give you a thorough understanding of PCA, but I think it’s a good place to see some of how it works. It also shows an alternative to the built in functions in R and the speed increase from it. This alternative is only useful when you have a really long matrix, but this is something that might occur fairly often. Thanks!</p>
